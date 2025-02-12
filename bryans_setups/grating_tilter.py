@@ -1,0 +1,155 @@
+import numpy as np
+
+from raypier.tracer import RayTraceModel
+from raypier.faces import CylindericalFace, PlanarFace, SphericalFace
+from raypier.shapes import RectangleShape, CircleShape
+from raypier.achromats import EdmundOptic45805
+from raypier.diffraction_gratings import RectangularGrating
+from raypier.mirrors import BaseMirror, PECMirror, RectMirror
+from raypier.sources import BroadbandRaySource
+from raypier.beamstop import BeamStop
+from raypier.results import GroupVelocityDispersion
+from raypier.constraints import BaseConstraint
+from raypier.chirp_result import ChirpResult
+from raypier.materials import OpticalMaterial
+from raypier.gausslet_sources import CollimatedGaussletSource, BroadbandGaussletSource
+from raypier.api import GeneralLens
+from raypier.core.cfaces import ShapedSphericalFace, CircularFace
+#from raypier.core.cshapes import CircleShape, RectangleShape
+from raypier.core.ctracer import FaceList
+
+from traits.api import Range, on_trait_change
+from traitsui.api import View, Item
+
+
+direction = np.array([0.0,0.0,0.5]) - np.array([-29.685957,124.73850,10])
+
+source = BroadbandRaySource(origin=(-29.685957,124.73850,10),
+                            direction=tuple(direction),
+                            wavelength_start=0.76,
+                            wavelength_end = 0.84,
+                            number=260,
+                            uniform_deltaf=True,
+                            max_ray_len=300.0)
+
+# source = BroadbandGaussletSource(origin=(-29.685957,124.73850,10),
+#                             direction=tuple(direction),
+#                             wavelength = .8,
+#                             wavelength_extent = 0.1,
+#                             bandwidth_nm = 10,
+#                             number=260,
+#                             uniform_deltaf=True,
+#                             max_ray_len=300.0,
+#                             beam_waist = 2000)
+
+# source = CollimatedGaussletSource(origin=(-29.685957,124.73850,1.5),
+#                                 direction=tuple(direction),
+#                                wavelength=1.0,
+#                                radius=10.0,
+#                                beam_waist=10.0,
+#                                resolution=10,
+#                                max_ray_len=200.0,
+#                                display='wires',
+#                                opacity=0.2
+#                                )
+
+
+grating = RectangularGrating(centre=(10,50,-10),
+                             direction=(-1,0,0),
+                             lines_per_mm=1400,
+                             order=-1,
+                             width = 15)
+
+grating_init_rotation = -157.8
+grating.orientation = grating_init_rotation
+
+lens = EdmundOptic45805(centre=(0,75,0),
+                        direction=(0,-1,0))
+init_lens_rotation = lens.orientation
+
+# mir = BaseMirror(centre=(0,150,0),
+#                 direction=(0,1,0),
+#                 thickness=5)
+
+shape = RectangleShape(centre = (0, 0), width = 80, height = 60)
+#shape = CircleShape(radius=7.5)
+
+face1 = PlanarFace(z_height=0.0)
+face2 = CylindericalFace(z_height=4.0, curvature=100.0, mirror = True)
+#face2 = SphericalFace(z_height=4.0, curvature=50.0)
+
+mat = OpticalMaterial(refractive_index=1)
+
+# mir = RectMirror(name = "Cylinderincal Mirror",
+#                      centre = (0,0,0),
+#                      direction=(0,0,1),
+#                      shape=shape, 
+#                      surfaces=[face1,
+#                                face2], 
+#                      materials=[])
+
+mir = GeneralLens(name = "Cylinderincal Lens",
+                     centre = (0,0,0),
+                     direction=(0,-1,0),
+                     shape=shape, 
+                     surfaces=[face2, 
+                               face1], 
+                     materials=[mat])
+
+
+# mir2 = RectMirror(centre=(-10.413843, 52.149718, -3.0),
+#                   direction=(0.23150872699334185, -0.9727849212359605, -0.009654343160915735),
+#                   width=6.0,
+#                   length=10.0)
+
+bs = BeamStop(centre=(-15,75,-15),
+              direction=(-0.2314983 ,  0.97131408,  0.05438228))
+
+gvd = GroupVelocityDispersion(source=source, target=bs.faces.faces[0])
+
+
+class GVDConstraint(BaseConstraint):
+    name = "Dispersion Compensator Adjustment"
+    focus_adjust = Range(70.0,80.0, value=73.5)
+    gdd_adjust = Range(-20.0,40.0, value=0.0)
+    lens_rotation = Range(-20.0, 20.0, value=0.0)
+    grating_angle = Range(-5.0,5.0, value=0.0)
+    
+    traits_view = View(Item("focus_adjust"),
+                       Item("gdd_adjust"),
+                       Item("lens_rotation"),
+                       Item("grating_angle"),
+                       resizable=True)
+    
+    @on_trait_change("focus_adjust, gdd_adjust")
+    def on_new_values(self):
+        lens.centre = (0.0, 75.0 + self.gdd_adjust, 0.0)
+        mir.centre = (0.0, 75.0 + self.gdd_adjust + self.focus_adjust, 0.0)
+        self.update = True
+        
+    def _lens_rotation_changed(self):
+        lens.orientation = (init_lens_rotation + self.lens_rotation+180.0)%360.0 - 180.0
+        self.update = True
+        
+    def _grating_angle_changed(self):
+        grating.orientation = grating_init_rotation + self.grating_angle
+        self.update = True
+    
+        
+gvd_cstr = GVDConstraint()
+    
+
+chirp = ChirpResult(source=source, target=bs.faces.faces[0])
+
+# model = RayTraceModel(optics=[grating, lens, mir, bs], 
+#                       sources=[source,],
+#                       results=[gvd, chirp],
+#                       constraints=[gvd_cstr,])
+
+model = RayTraceModel(optics=[ grating, mir, bs], 
+                      sources=[source,],
+                      results=[gvd, chirp],
+                    #   constraints=[gvd_cstr,]
+                        )
+
+model.configure_traits(kind="live")

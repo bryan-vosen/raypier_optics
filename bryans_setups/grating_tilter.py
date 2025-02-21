@@ -25,16 +25,6 @@ from traits.api import Range, on_trait_change
 from traitsui.api import View, Item
 
 
-# direction = np.array([0.0,0.0,0.5]) - np.array([-29.685957,124.73850,10])
-
-# source = BroadbandRaySource(origin=(-29.685957,124.73850,10),
-#                             direction=tuple(direction),
-#                             wavelength_start=0.78,
-#                             wavelength_end = 0.82,
-#                             number=260,
-#                             uniform_deltaf=True,
-#                             max_ray_len=300.0)
-
 direction = np.array([0.0,-1,-0.1])
 
 source = BroadbandRaySource(origin=(0,70,10),
@@ -66,8 +56,8 @@ source = BroadbandRaySource(origin=(0,70,10),
 #                                opacity=0.2
 #                                )
 
-
-grating = RectangularGrating(centre=(0,46,-2),
+grating_distance = 45.997
+grating = RectangularGrating(centre=(0,grating_distance,-2),
                              direction=(-1,0,0),
                              lines_per_mm=1200,
                              order=-1,
@@ -80,26 +70,14 @@ lens = EdmundOptic45805(centre=(0,75,0),
                         direction=(0,-1,0))
 init_lens_rotation = lens.orientation
 
-# mir = BaseMirror(centre=(0,150,0),
-#                 direction=(0,1,0),
-#                 thickness=5)
 
 shape = RectangleShape(centre = (0, 0), width = 80, height = 60)
-#shape = CircleShape(radius=7.5)
 
 face1 = PlanarFace(z_height=0.0)
 face2 = CylindericalFace(z_height=4.0, curvature=100.0, mirror = True)
-#face2 = SphericalFace(z_height=4.0, curvature=50.0)
 
 mat = OpticalMaterial(refractive_index=1)
 
-# mir = RectMirror(name = "Cylinderincal Mirror",
-#                      centre = (0,0,0),
-#                      direction=(0,0,1),
-#                      shape=shape, 
-#                      surfaces=[face1,
-#                                face2], 
-#                      materials=[])
 
 mir = GeneralLens(name = "Cylinderincal Lens",
                      centre = (0,0,0),
@@ -109,11 +87,6 @@ mir = GeneralLens(name = "Cylinderincal Lens",
                                face1], 
                      materials=[mat])
 
-
-# mir2 = RectMirror(centre=(-10.413843, 52.149718, -3.0),
-#                   direction=(0.23150872699334185, -0.9727849212359605, -0.009654343160915735),
-#                   width=6.0,
-#                   length=10.0)
 
 bs = BeamStop(centre=(0,50,-10),
               direction=(0 , -1,  0),
@@ -170,7 +143,7 @@ try:
 
     fig, ax = plt.subplots()
     ax.plot(wavelength, phase)
-    ax.set(xlabel = "Wavelength (nm)", ylabel = "Phase", title = "Phase Evalution")
+    ax.set(xlabel = "Wavelength (nm)", ylabel = "Phase", title = f"Phase Evalution, gd = {grating_distance}")
     ax.grid()
 
 
@@ -179,6 +152,8 @@ try:
     fig.savefig(f"D:\senior_design\Screenshots\phase_plots\phase_plot_{now}.png")
 except:
     print("Error making plot")
+
+
 
 
 

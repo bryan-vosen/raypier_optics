@@ -247,27 +247,30 @@ def generate_beam_lateral_pos_plot():
 
 def generate_grating_distance_group_delay_plot():
     all_rmse = []
-    grating_distances = np.arange(400, 990, 1)
+    grating_distances = np.arange(499, 501, 0.01)
 
-    direction = np.array([0.0,-1,-0.015])
-    grating_distance = 500
+    direction = np.array([0.0,-1,-0.03])
     grating_init_rotation = -151.31
-    cylindrical_radius_curvature = 1000
+    cylindrical_radius_curvature = -1000
     source_bandwidth = 32
     source_wavelength = 800
 
+
+    wavelength_start = source_wavelength / 1000 - source_bandwidth/2000
+    wavelength_end = source_wavelength / 1000 + source_bandwidth/2000
 
     for grating_distance in grating_distances:
 
         wavelength_start = source_wavelength / 1000 - source_bandwidth/2000
         wavelength_end = source_wavelength / 1000 + source_bandwidth/2000
-        source = BroadbandRaySource(origin=(0,260,10),
-                                    direction=tuple(direction),
-                                    wavelength_start=wavelength_start,
-                                    wavelength_end = wavelength_end,
-                                    number=500,
-                                    uniform_deltaf=True,
-                                    max_ray_len=1000000.0)
+        source = BroadbandRaySource(origin=(0,260,20),
+                                direction=tuple(direction),
+                                wavelength_start=wavelength_start,
+                                wavelength_end = wavelength_end,
+                                number=200,
+                                uniform_deltaf=True,
+                                max_ray_len= 2000.0,
+                                show_normals=True)
 
 
 
@@ -282,19 +285,32 @@ def generate_grating_distance_group_delay_plot():
         grating.orientation = grating_init_rotation
 
         shape = RectangleShape(centre = (0, 0), width = 80, height = 60)
-        face2 = CylindericalFace(z_height=4.0, curvature=cylindrical_radius_curvature, mirror = True)
-        mat = OpticalMaterial(refractive_index=1)
+        # face2 = CylindericalFace(z_height=4.0, curvature=cylindrical_radius_curvature, mirror = True)
+        # mat = OpticalMaterial(refractive_index=1)
+        # mir = GeneralLens(name = "Cylinderincal Lens",
+        #                     centre = (0,0,0),
+        #                     direction=(0,-1,0),
+        #                     shape=shape, 
+        #                     surfaces=[face2], 
+        #                     materials=[mat])
+        
+        face1 = PlanarFace(z_height=10)
+        face2 = CylindericalFace(z_height=0.0, curvature=cylindrical_radius_curvature, mirror = True)
+
+        mat = OpticalMaterial( refractive_index=1.00)
         mir = GeneralLens(name = "Cylinderincal Lens",
                             centre = (0,0,0),
-                            direction=(0,-1,0),
+                            direction=(0,1,0),
                             shape=shape, 
-                            surfaces=[face2], 
-                            materials=[mat])
+                            surfaces=[face2, face1], 
+                            materials=[mat],
+
+                            )
 
 
         bs = BeamStop(centre=(0,1000,-20),
                     direction=(0 , -1,  0),
-                    diameter = 100
+                    diameter = 500
                     )
 
         gvd = GroupVelocityDispersion(source=source, target=bs.faces.faces[0])
@@ -306,6 +322,7 @@ def generate_grating_distance_group_delay_plot():
                             results=[gvd, chirp, mean_optical_path],
                             #   constraints=[gvd_cstr,]
                                 )
+        #model.configure_traits(kind="live")
 
         try:
             wavelength, group_delay = evaluate_group_delay(all_wavelengths=np.asarray(source.wavelength_list), traced_rays = source.traced_rays, target_face = bs.faces.faces[0])
@@ -327,6 +344,7 @@ def generate_grating_distance_group_delay_plot():
             # now = time.strftime("%Y%m%d-%H%M%S")
             # fig.savefig(f"D:\senior_design\Screenshots\group_delay_plots\group_delay_plot_{now}.png")
         except:
+            all_rmse.append(np.nan)
             print("Error making plot")
     
     fig, ax = plt.subplots()

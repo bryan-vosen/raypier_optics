@@ -25,7 +25,7 @@ from traits.api import Range, on_trait_change
 from traitsui.api import View, Item
 
 
-direction = np.array([0.0,-1,-0.015])
+direction = np.array([0.0,-1,-0.03])
 grating_distance = 500
 grating_init_rotation = -151.31
 cylindrical_radius_curvature = -1000
@@ -35,7 +35,7 @@ source_wavelength = 800
 
 wavelength_start = source_wavelength / 1000 - source_bandwidth/2000
 wavelength_end = source_wavelength / 1000 + source_bandwidth/2000
-source = BroadbandRaySource(origin=(0,260,10),
+source = BroadbandRaySource(origin=(0,260,20),
                             direction=tuple(direction),
                             wavelength_start=wavelength_start,
                             wavelength_end = wavelength_end,

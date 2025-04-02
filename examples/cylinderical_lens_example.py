@@ -1,6 +1,7 @@
 
 
-from raypier.lenses import GeneralLens, PlanoConvexLens
+from raypier.lenses import BaseLens, PlanoConvexLens
+from raypier.api import GeneralLens
 from raypier.faces import CylindericalFace, PlanarFace, SphericalFace
 from raypier.materials import OpticalMaterial
 from raypier.shapes import CircleShape

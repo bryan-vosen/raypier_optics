@@ -322,7 +322,7 @@ def generate_grating_distance_group_delay_plot():
                             results=[gvd, chirp, mean_optical_path],
                             #   constraints=[gvd_cstr,]
                                 )
-        #model.configure_traits(kind="live")
+        model.configure_traits(kind="live")
 
         try:
             wavelength, group_delay = evaluate_group_delay(all_wavelengths=np.asarray(source.wavelength_list), traced_rays = source.traced_rays, target_face = bs.faces.faces[0])
